@@ -50,7 +50,7 @@ AIC31_data_type codec_data;
 //D_SIZE is the size of the d_k vector.  It is equal to the
 //number of stages multiplied by 2 (d(0,k) always equals x(k)),
 //so we don't need to carry its value around.
-#define D_SIZE (8)
+#define D_SIZE  (8)
 
 // Function prototype
 float dfIIR(float, float*, float*, float*, int);
