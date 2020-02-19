@@ -40,7 +40,7 @@ _dfIIR:	.proc A4, B4, A6, B6, A8, B3
 		mv		B6, p_gain			; p_gain now has address of gain array
 		mv		A8, count			; count = number of iterations(# of stages)
 
-;loop:	.trip 40					; minimum of 4 iterations
+loop:	.trip 40					; minimum of 4 iterations
 
 		; recall that d_k = output of previous stage (or x[n] for stage 0)
 
@@ -71,11 +71,11 @@ _dfIIR:	.proc A4, B4, A6, B6, A8, B3
 
 		mv		y_k, d_k			; d_k = output of previous stage
 
-;[count]	sub		count, 1, count		; decrement counter
-;[count]	b		loop				; branch back to loop (END LOOP)
+[count]	sub		count, 1, count		; decrement counter
+[count]	b		loop				; branch back to loop (END LOOP)
 
-		;ldw		*p_gain, inter		; load final stage gain into inter
-		;mpysp	y_k, inter, y_k		; y_k = y_k * final gain
+		ldw		*p_gain, inter		; load final stage gain into inter
+		mpysp	y_k, inter, y_k		; y_k = y_k * final gain
 
 		mv		y_k, A4				; store y_final in return reg A4
 		.endproc A4, B3

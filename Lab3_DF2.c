@@ -105,7 +105,7 @@ interrupt void interrupt4(void)
   x2n = (float)(input_right_sample()); // input from ADC
 
 // Insert processing code here......
-  yn = dfIIR(x1n, abCoeffs, d_k, gains, 4);
+  yn = dfIIR(x1n, abCoeffs, d_k, gains, 3);
   
   // output to BOTH right and left channels...
   codec_data.channel[LEFT] = (uint16_t)(yn);
