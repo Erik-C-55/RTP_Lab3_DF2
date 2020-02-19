@@ -18,24 +18,26 @@
 ; A4 = x[n] (current input)
 ; B4 = address of abCoeffs[] array
 ; A6 = address of d_k array
-; B6 = last gain coefficient
+; B6 = address of gain array
 ; A8 = number of stages
 ; B3 = return register (required)
 
 _dfIIR:	.proc A4, B4, A6, B6, A8, B3
-		.reg d_k, d_kprev, y_k, p_ab, ab, p_dk, inter, count
+		.reg d_k, d_kprev, y_k, p_ab, ab, p_dk, p_gain, inter, count
 		; d_k is the d_k value for the current stage
 		; d_kprev is a previous d_k value (d_k[n-2] or d_k[n-1])
 		; y_k is the y_k value for the current stage
 		; p_ab is a pointer to the next value of the abCoeffs array
 		; a is the current a/b coefficient
 		; p_dk points to the current value of the d_k array
+		; p_gain points to the next gain value
 		; inter is an intermediate product/sum
 		; count is a decrementing counter used for the loop
 
 		mv		A4, d_k				; d_k = x[n]
 		mv		B4, p_ab			; p_ab now has address of abCoeffs[]
 		mv		A6, p_dk			; p_dk now has address of d_k array
+		mv		B6, p_gain			; p_gain now has address of gain array
 		mv		A8, count			; count = number of iterations(# of stages)
 
 loop:	.trip 4						; minimum of 4 iterations
@@ -64,11 +66,15 @@ loop:	.trip 4						; minimum of 4 iterations
 
 		stw		d_k, *p_dk++		; store d_k in d_k[n-1]
 
+		ldw		*p_gain++, inter	; load gain of stage into inter
+		mpysp	y_k, inter, y_k		; y_k = y_k * stage gain
+
 [count]	sub		count, 1, count		; decrement counter
 [count]	b		loop				; branch back to loop (END LOOP)
 
-		mv		B6, inter			; load the final gain into inter
+		ldw		*p_gain, inter		; load final gain of stage into inter
 		mpysp	y_k, inter, y_k		; y_k = y_k * final gain
+
 		mv		y_k, A4				; store y_final in return reg A4
 		.endproc A4, B3
 
