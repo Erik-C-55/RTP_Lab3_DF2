@@ -47,19 +47,64 @@ Modified: See subversion logs.
 // This data structure allows for outputting to both channels.
 AIC31_data_type codec_data;
 
+//D_SIZE is the size of the d_k vector.  It is equal to the
+//number of stages multiplied by 2 (d(0,k) always equals x(k)),
+//so we don't need to carry its value around.
+#define D_SIZE (8)
+
+// Function prototype
+float dfIIR(float, float*, float*, float, int);
+
+// The abCoeffs array contains the a and b coefficients for the
+// second-order sections in the direct-form structure.  These
+// coefficients are in the following order:
+// a(2,0), b(2,0), a(1,0), b(1,0), b(0,0), a(2,1), b(2,1), ...
+// where a(n, k) is the nth coefficient in the kth stage.
+float abCoeffs[] = {0.925474523703572,
+                    -0.194541995843674,
+                    -0.845057100107810,
+                    0.0000000000000000,
+                    0.194541995843674,
+                    0.944936436225674,
+                    -0.194541995843674,
+                    -1.465843069884673,
+                    0.0000000000000000,
+                    0.194541995843674,
+                    0.855163353611161,
+                    -0.109202904106442,
+                    -1.265697874274888,
+                    0.0000000000000000,
+                    0.109202904106442,
+                    0.836282737599746,
+                    -0.109202904106442,
+                    -1.010647991647261,
+                    0.0000000000000000,
+                    0.109202904106442
+};
+
+// When creating this filter as Second-Order Sections, MATLAB
+// generates a final gain coefficient that is required to generate
+// the final output.  I place that final coefficient here.
+float final_gain = 0.944060876285923;
+
+// The values in d_k are arranged in the following order:
+// d_0[n-2], d_0[n-1], d_1[n-2], d_1[n-1], ...
+float d_k[D_SIZE] = {0};
+
 interrupt void interrupt4(void)
 {
-  float yn,xn = 0.0;
+    float x1n, x2n, yn = 0.0;
   
   // Get the next sample of the input.
-  yn = (float)(input_left_sample()); // input from ADC
-  xn = (float)(input_right_sample()); // input from ADC
+  x1n = (float)(input_left_sample()); // input from ADC
+  x2n = (float)(input_right_sample()); // input from ADC
 
 // Insert processing code here......
+  yn = dfIIR(x1n, abCoeffs, d_k, final_gain, 4);
   
   // output to BOTH right and left channels...
   codec_data.channel[LEFT] = (uint16_t)(yn);
-  codec_data.channel[RIGHT] = (uint16_t)(xn);
+  codec_data.channel[RIGHT] = (uint16_t)(x2n);
   output_sample(codec_data.uint);  // output to L and R DAC
 
   return;

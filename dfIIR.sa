@@ -1,0 +1,79 @@
+;*******************************************
+; dfIIR - Direct-Form FIR Filtering
+; This linear assembly code uses 1 array of
+; biquad coefficients (which have been
+; pre-multiplied by their stage gain) and 1
+; final gain to produce an output
+; from the cascaded biquad stages.
+;
+; Created for ECE 5640 by:
+;     Erik Clemens
+;*******************************************
+
+		.title "dfIIR.sa"
+		.def 	_dfIIR
+		.sect	".text"
+		.global	_dfIIR
+
+; A4 = x[n] (current input)
+; B4 = address of abCoeffs[] array
+; A6 = address of d_k array
+; B6 = last gain coefficient
+; A8 = number of stages
+; B3 = return register (required)
+
+_dfIIR:	.proc A4, B4, A6, B6, A8, B3
+		.reg d_k, d_kprev, y_k, p_ab, ab, p_dk, inter, count
+		; d_k is the d_k value for the current stage
+		; d_kprev is a previous d_k value (d_k[n-2] or d_k[n-1])
+		; y_k is the y_k value for the current stage
+		; p_ab is a pointer to the next value of the abCoeffs array
+		; a is the current a/b coefficient
+		; p_dk points to the current value of the d_k array
+		; inter is an intermediate product/sum
+		; count is a decrementing counter used for the loop
+
+		mv		A4, d_k				; d_k = x[n]
+		mv		B4, p_ab			; p_ab now has address of abCoeffs[]
+		mv		A6, p_dk			; p_dk now has address of d_k array
+		mv		A8, count			; count = number of iterations(# of stages)
+
+loop:	.trip 4						; minimum of 4 iterations
+
+		; recall that d_k = output of previous stage (or x[n] for stage 0)
+
+		ldw		*p_dk++, d_kprev	; load d_k[n-2] to d_kprev
+		ldw		*p_ab++, ab			; load a(2, k) into ab
+		mpysp	ab, d_kprev, inter	; inter = a(2,k) * d_k[n-2]
+		subsp	d_k, inter, d_k		; d_k = x_k - (a(2,k) * d_k[n-2])
+		ldw		*p_ab++, ab			; load b(2,k) into ab
+		mpysp	ab, d_kprev, y_k	; y_k = b(2,k) * d_k[n-2]
+
+		ldw		*p_dk--, d_kprev	; load d_k[n-1] to d_kprev
+		stw		d_kprev, *p_dk++	; store d_k[n-1] in d_k[n-2]
+		ldw		*p_ab++, ab			; load a(1,k) into ab
+		mpysp 	ab, d_kprev, inter	; inter = a(1,k) * d_k[n-1]
+		subsp	d_k, inter, d_k		; d_k = d_k - (a(1,k) * d_k[n-1])
+		ldw		*p_ab++, ab			; load b(1,k) into ab
+		mpysp	ab, d_kprev, inter	; inter = (b(1,k) * d_k[n-1])
+		addsp	y_k, inter, y_k		; y_k = y_k + (b(1,k) * d_k[n-1])
+
+		ldw		*p_ab++, ab			; load b(0,k) into ab
+		mpysp	ab, d_k, inter		; inter = b(0,k) * d_k[n]
+		addsp	y_k, inter, y_k		; y_k = y_k + (b(0,k) * d_k[n])
+
+		stw		d_k, *p_dk++		; store d_k in d_k[n-1]
+
+[count]	sub		count, 1, count		; decrement counter
+[count]	b		loop				; branch back to loop (END LOOP)
+
+		mv		B6, inter			; load the final gain into inter
+		mpysp	y_k, inter, y_k		; y_k = y_k * final gain
+		mv		y_k, A4				; store y_final in return reg A4
+		.endproc A4, B3
+
+		b		B3					; branch back to address stored in B3
+		nop		5
+; End LOOP
+; y_4 = y_3 * gain[4]
+
