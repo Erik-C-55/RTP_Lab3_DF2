@@ -31,7 +31,7 @@ _dfIIR:	.proc A4, B4, A6, B6, A8, B3
 		; a is the current a/b coefficient
 		; p_dk points to the current value of the d_k array
 		; p_gain points to the next gain value
-		; inter is an intermediate product/sum
+		; inter is an intermediate product
 		; count is a decrementing counter used for the loop
 
 		mv		A4, d_k				; d_k = x[n]

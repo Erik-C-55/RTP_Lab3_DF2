@@ -98,14 +98,14 @@ float d_k[D_SIZE] = {0};
 
 interrupt void interrupt4(void)
 {
-    float x1n, x2n, yn = 0.0;
+    float x1n, x2n, yn;
   
   // Get the next sample of the input.
   x1n = (float)(input_left_sample()); // input from ADC
   x2n = (float)(input_right_sample()); // input from ADC
 
 // Insert processing code here......
-  yn = dfIIR(x1n, abCoeffs, d_k, gains, 3);
+  yn = dfIIR(x1n, abCoeffs, d_k, gains, 4);
   
   // output to BOTH right and left channels...
   codec_data.channel[LEFT] = (uint16_t)(yn);
